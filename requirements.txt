@@ -1,0 +1,20 @@
+# Core dependencies
+python-dotenv>=1.0.0
+
+# watsonx.ai
+ibm-watsonx-ai>=0.2.0
+
+# Pinecone (for Day 2)
+pinecone-client>=3.0.0
+
+# Streamlit for dashboard
+streamlit>=1.28.0
+plotly>=5.17.0
+
+# Data processing
+pandas>=2.0.0
+numpy>=1.24.0
+
+# Optional: For future enhancements
+# langgraph>=0.2.0
+# langchain>=0.1.0

@@ -1,10 +1,19 @@
 """
 Template-based diagnosis function for POC
 Task 4: 1 hour - Simple template-based responses, no watsonx.ai needed initially
+Updated: Added watsonx.ai integration
 """
 
 from datetime import datetime
 from rag import query_equipment_manual
+
+# Import watsonx.ai integration
+try:
+    from watsonx_integration import get_watsonx_ai
+    WATSONX_AVAILABLE = True
+except ImportError:
+    WATSONX_AVAILABLE = False
+    print("watsonx.ai integration not available")
 
 
 class DiagnosticEngine:
@@ -18,20 +27,26 @@ class DiagnosticEngine:
         Initialize diagnostic engine
         
         Args:
-            use_ai: If True, use real AI (Day 2). If False, use templates (Day 1)
+            use_ai: If True, use real AI (watsonx.ai). If False, use templates
         """
         self.use_ai = use_ai
         self.ai_model = None
         
-        if use_ai:
-            # Will be implemented in Day 2
+        if use_ai and WATSONX_AVAILABLE:
             self._initialize_ai_model()
     
     def _initialize_ai_model(self):
-        """Initialize watsonx.ai model (Day 2 implementation)"""
-        # Placeholder for Day 2
-        print("AI model initialization - to be implemented in Day 2")
-        pass
+        """Initialize watsonx.ai model"""
+        try:
+            self.ai_model = get_watsonx_ai()
+            if self.ai_model.available:
+                print("✅ watsonx.ai diagnostic engine initialized")
+            else:
+                print("⚠️  watsonx.ai not available, using template-based diagnosis")
+                self.use_ai = False
+        except Exception as e:
+            print(f"❌ Error initializing watsonx.ai: {e}")
+            self.use_ai = False
     
     def diagnose_equipment_issue(self, anomaly_event):
         """
@@ -126,7 +141,7 @@ class DiagnosticEngine:
     
     def _diagnose_with_ai(self, anomaly_event, rag_results):
         """
-        AI-based diagnosis using watsonx.ai (Day 2 implementation)
+        AI-based diagnosis using watsonx.ai
         
         Args:
             anomaly_event: Anomaly information
@@ -135,13 +150,56 @@ class DiagnosticEngine:
         Returns:
             dict: AI-generated diagnosis report
         """
-        # Placeholder for Day 2 implementation
-        # Will use watsonx.ai Granite model
+        if not self.ai_model or not self.ai_model.available:
+            print("⚠️  AI not available, using template-based diagnosis")
+            return self._diagnose_with_template(anomaly_event, rag_results)
         
-        print("AI diagnosis - to be implemented in Day 2")
-        
-        # For now, fall back to template
-        return self._diagnose_with_template(anomaly_event, rag_results)
+        try:
+            # Prepare information for AI
+            equipment_info = {
+                "equipment_id": anomaly_event["equipment_id"],
+                "equipment_name": rag_results.get("equipment_name", "Unknown"),
+                "equipment_type": rag_results.get("equipment_type", "Unknown")
+            }
+            
+            anomaly_info = {
+                "anomaly_type": anomaly_event["anomaly_type"],
+                "severity": self._determine_severity(anomaly_event.get("sensor_data", {}), anomaly_event["anomaly_type"]),
+                "sensor_data": anomaly_event.get("sensor_data", {})
+            }
+            
+            # Format RAG context for AI
+            from rag import MockRAG
+            rag = MockRAG()
+            rag_context = rag.format_for_llm(
+                anomaly_event["equipment_id"],
+                anomaly_event["anomaly_type"],
+                anomaly_event.get("sensor_data")
+            )
+            
+            # Generate AI diagnosis
+            print("🤖 Generating AI diagnosis with watsonx.ai...")
+            ai_diagnosis = self.ai_model.generate_diagnosis(equipment_info, anomaly_info, rag_context)
+            
+            # Merge AI diagnosis with RAG results
+            diagnosis = self._diagnose_with_template(anomaly_event, rag_results)
+            
+            # Update with AI insights
+            diagnosis["root_cause"] = ai_diagnosis.get("root_cause", diagnosis["root_cause"])
+            diagnosis["confidence_score"] = ai_diagnosis.get("confidence_score", 0.90)
+            diagnosis["ai_analysis"] = ai_diagnosis.get("analysis", "")
+            diagnosis["ai_recommended_actions"] = ai_diagnosis.get("recommended_actions", [])
+            diagnosis["diagnosis_method"] = "ai_enhanced"
+            diagnosis["ai_model"] = ai_diagnosis.get("model", "watsonx.ai")
+            
+            print("✅ AI diagnosis complete")
+            
+            return diagnosis
+            
+        except Exception as e:
+            print(f"❌ Error in AI diagnosis: {e}")
+            print("⚠️  Falling back to template-based diagnosis")
+            return self._diagnose_with_template(anomaly_event, rag_results)
     
     def _format_sensor_summary(self, sensor_data):
         """Format sensor readings into human-readable summary"""
