@@ -1,0 +1,128 @@
+name: work_order_api
+description: Work Order Management System API
+version: 1.0.0
+
+# API Configuration
+api:
+  type: rest
+  base_url: ${WORK_ORDER_API_URL}
+  authentication:
+    type: bearer_token
+    token: ${WORK_ORDER_API_KEY}
+
+# Endpoints
+endpoints:
+  create_work_order:
+    method: POST
+    path: /api/v1/work-orders
+    description: Create a new maintenance work order
+    request:
+      content_type: application/json
+      body:
+        equipment_id:
+          type: string
+          required: true
+        issue_description:
+          type: string
+          required: true
+        required_parts:
+          type: array
+          items:
+            type: string
+          required: true
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: high
+        status:
+          type: string
+          default: open
+        created_by:
+          type: string
+          default: ai_agent
+    response:
+      success:
+        status_code: 201
+        schema:
+          work_order_id:
+            type: string
+          status:
+            type: string
+          assigned_to:
+            type: string
+          estimated_completion:
+            type: string
+          created_at:
+            type: string
+      error:
+        status_code: [400, 500]
+        schema:
+          error:
+            type: string
+          message:
+            type: string
+
+  get_work_order:
+    method: GET
+    path: /api/v1/work-orders/{work_order_id}
+    description: Retrieve work order details
+    parameters:
+      - name: work_order_id
+        in: path
+        type: string
+        required: true
+    response:
+      success:
+        status_code: 200
+        schema:
+          work_order_id:
+            type: string
+          equipment_id:
+            type: string
+          status:
+            type: string
+          assigned_to:
+            type: string
+          parts:
+            type: array
+          created_at:
+            type: string
+          updated_at:
+            type: string
+
+  update_work_order:
+    method: PATCH
+    path: /api/v1/work-orders/{work_order_id}
+    description: Update work order status
+    parameters:
+      - name: work_order_id
+        in: path
+        type: string
+        required: true
+    request:
+      content_type: application/json
+      body:
+        status:
+          type: string
+          enum: [open, in_progress, completed, cancelled]
+        assigned_to:
+          type: string
+        notes:
+          type: string
+
+# Error handling
+error_handling:
+  retry:
+    max_attempts: 3
+    backoff: exponential
+    initial_delay: 1000
+  timeout: 30000
+
+# Logging
+logging:
+  enabled: true
+  level: info
+  include_request: true
+  include_response: true
+
+# Made with Bob

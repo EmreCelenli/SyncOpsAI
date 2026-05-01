@@ -1,0 +1,137 @@
+spec_version: v1
+name: work_order_orchestrator
+display_name: Work Order Orchestrator
+description: Automated work order creation and inventory management for IoT anomaly response
+version: 1.0.0
+
+# Agent configuration
+agent:
+  type: native
+  llm:
+    model_id: ibm/granite-13b-chat-v2
+    parameters:
+      temperature: 0.3
+      max_tokens: 500
+
+# Skills this agent can perform
+skills:
+  - name: create_work_order
+    description: Create a maintenance work order for equipment issues
+    tool: work_order_api
+    parameters:
+      - name: equipment_id
+        type: string
+        required: true
+        description: Equipment identifier (e.g., HVAC-001)
+      - name: issue_description
+        type: string
+        required: true
+        description: Root cause diagnosis from AI analysis
+      - name: required_parts
+        type: array
+        required: true
+        description: List of parts needed for repair
+      - name: priority
+        type: string
+        required: false
+        default: high
+        enum: [low, medium, high, critical]
+        description: Work order priority level
+    
+  - name: check_inventory
+    description: Check parts availability in inventory system
+    tool: inventory_api
+    parameters:
+      - name: parts
+        type: array
+        required: true
+        description: List of part numbers to check
+    
+  - name: assign_technician
+    description: Auto-assign technician based on skills and availability
+    tool: technician_api
+    parameters:
+      - name: work_order_id
+        type: string
+        required: true
+        description: Work order identifier
+      - name: required_skills
+        type: array
+        required: true
+        description: Required technician skills (e.g., HVAC, Electrical)
+      - name: priority
+        type: string
+        required: false
+        default: high
+        description: Assignment priority
+
+# Workflow definition
+workflow:
+  steps:
+    - id: create_wo
+      skill: create_work_order
+      on_success: check_parts
+      on_failure: notify_error
+    
+    - id: check_parts
+      skill: check_inventory
+      on_success: assign_tech
+      on_failure: order_parts
+    
+    - id: assign_tech
+      skill: assign_technician
+      on_success: notify_complete
+      on_failure: manual_assign
+    
+    - id: order_parts
+      action: log
+      message: "Parts on backorder - estimated delivery: {estimated_delivery}"
+      next: assign_tech
+    
+    - id: manual_assign
+      action: log
+      message: "Manual technician assignment required"
+      next: notify_complete
+    
+    - id: notify_complete
+      action: complete
+      message: "Work order {work_order_id} created and assigned"
+    
+    - id: notify_error
+      action: error
+      message: "Failed to create work order: {error}"
+
+# Integration points
+integrations:
+  - name: work_order_system
+    type: rest_api
+    base_url: ${WORK_ORDER_API_URL}
+    auth:
+      type: bearer
+      token: ${WORK_ORDER_API_KEY}
+  
+  - name: inventory_system
+    type: rest_api
+    base_url: ${INVENTORY_API_URL}
+    auth:
+      type: bearer
+      token: ${INVENTORY_API_KEY}
+  
+  - name: technician_system
+    type: rest_api
+    base_url: ${TECHNICIAN_API_URL}
+    auth:
+      type: bearer
+      token: ${TECHNICIAN_API_KEY}
+
+# Monitoring and logging
+monitoring:
+  enabled: true
+  log_level: info
+  metrics:
+    - work_orders_created
+    - average_response_time
+    - parts_availability_rate
+    - technician_assignment_rate
+
+# Made with Bob

@@ -1,0 +1,134 @@
+name: inventory_api
+description: Inventory Management System API
+version: 1.0.0
+
+# API Configuration
+api:
+  type: rest
+  base_url: ${INVENTORY_API_URL}
+  authentication:
+    type: bearer_token
+    token: ${INVENTORY_API_KEY}
+
+# Endpoints
+endpoints:
+  check_availability:
+    method: POST
+    path: /api/v1/inventory/check
+    description: Check parts availability in inventory
+    request:
+      content_type: application/json
+      body:
+        parts:
+          type: array
+          items:
+            type: string
+          required: true
+          description: List of part numbers to check
+    response:
+      success:
+        status_code: 200
+        schema:
+          all_available:
+            type: boolean
+          parts_status:
+            type: array
+            items:
+              type: object
+              properties:
+                part:
+                  type: string
+                available:
+                  type: boolean
+                quantity:
+                  type: integer
+                location:
+                  type: string
+          backorder_items:
+            type: array
+            items:
+              type: string
+          estimated_delivery:
+            type: string
+            nullable: true
+      error:
+        status_code: [400, 500]
+        schema:
+          error:
+            type: string
+          message:
+            type: string
+
+  reserve_parts:
+    method: POST
+    path: /api/v1/inventory/reserve
+    description: Reserve parts for a work order
+    request:
+      content_type: application/json
+      body:
+        work_order_id:
+          type: string
+          required: true
+        parts:
+          type: array
+          items:
+            type: object
+            properties:
+              part_number:
+                type: string
+              quantity:
+                type: integer
+          required: true
+    response:
+      success:
+        status_code: 200
+        schema:
+          reservation_id:
+            type: string
+          status:
+            type: string
+          expires_at:
+            type: string
+
+  get_part_details:
+    method: GET
+    path: /api/v1/inventory/parts/{part_number}
+    description: Get detailed information about a part
+    parameters:
+      - name: part_number
+        in: path
+        type: string
+        required: true
+    response:
+      success:
+        status_code: 200
+        schema:
+          part_number:
+            type: string
+          description:
+            type: string
+          quantity_available:
+            type: integer
+          unit_cost:
+            type: number
+          location:
+            type: string
+          supplier:
+            type: string
+
+# Error handling
+error_handling:
+  retry:
+    max_attempts: 3
+    backoff: exponential
+    initial_delay: 1000
+  timeout: 30000
+
+# Logging
+logging:
+  enabled: true
+  level: info
+  include_request: true
+  include_response: true
+
+# Made with Bob

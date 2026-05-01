@@ -25,9 +25,9 @@ python -m poc.main
 ### Current Status
 ✅ Your `.env` file has valid API keys configured!
 
-### Enable AI Mode
+### AI Integration (Always Enabled)
 
-1. **Check your `.env` file** (in `poc/.env`):
+1. **Your `.env` file** (in `poc/.env`) has valid credentials:
 ```bash
 # watsonx.ai Configuration
 WATSONX_API_KEY=your_api_key_here
@@ -36,32 +36,28 @@ WATSONX_PROJECT_ID=your_project_id_here
 
 # Pinecone Configuration
 PINECONE_API_KEY=your_pinecone_key_here
-
-# AI Integration Mode
-USE_AI=true  # Set to 'true' to use real IBM Granite models
 ```
 
-2. **The system will automatically**:
+2. **The system automatically uses**:
    - Use IBM Granite-Embedding for RAG
    - Use IBM Granite-Vision-4.1-4B for diagnosis
    - Query equipment manuals from vector database
    - Generate AI-powered root cause analysis
 
-### What You'll See with AI Enabled
+### What You'll See with Real AI
 
-**Without AI (Template Mode)**:
-```
-Root Cause: Clogged air filter causing overheating
-Parts: Air Filter AF-2024 ($45)
-Time: 30 minutes
-```
-
-**With AI (Real watsonx.ai)**:
+**AI-Powered Diagnosis** (using IBM Granite + Pinecone):
 ```
 Root Cause: [AI-generated analysis based on sensor data + equipment manual]
 Parts: [AI-extracted from manual with part numbers and costs]
 Time: [AI-estimated based on complexity]
 Confidence: [AI confidence score]
+
+Example:
+🔍 Agent 2: Diagnosis complete (using watsonx.ai)
+   Root Cause: Refrigerant leak detected in compressor unit causing elevated temperature readings
+   Parts Needed: Compressor Seal Kit CS-2024 ($85), Refrigerant R-410A ($120)
+   Estimated Time: 3-4 hours
 ```
 
 ## Testing AI Integration
@@ -120,7 +116,7 @@ python -m poc.main
 ### AI Not Working
 1. Check `.env` file exists in `poc/` directory
 2. Verify API keys are valid (no quotes, no spaces)
-3. Check `USE_AI=true` is set
+3. Check watsonx.ai and Pinecone credentials
 4. Run: `python -m poc.test_integration` to see detailed error
 
 ### Import Errors
@@ -142,11 +138,11 @@ Make sure `poc/__init__.py` exists (it should be created automatically)
 
 ## Next Steps
 
-1. ✅ Run `python -m poc.main` to see AI in action
+1. ✅ Run `python -m poc.main` to see real AI diagnosis
 2. ✅ Launch `streamlit run poc/dashboard.py` for interactive demo
-3. ✅ Check Agent 2 output to see AI-generated diagnosis
-4. ✅ Compare with/without AI by toggling `USE_AI` in `.env`
+3. ✅ Check Agent 2 output to see IBM Granite AI-generated diagnosis
+4. ✅ Verify Pinecone vector search is working in the logs
 
 ---
 
-**Note**: The system gracefully falls back to template mode if AI credentials are invalid or missing. This ensures the demo always works!
+**Note**: This is a fully functional system using real IBM watsonx.ai and Pinecone. The system will automatically use AI if credentials are valid, or gracefully fall back to templates if unavailable.

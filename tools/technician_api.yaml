@@ -1,0 +1,166 @@
+name: technician_api
+description: Technician Management and Assignment System API
+version: 1.0.0
+
+# API Configuration
+api:
+  type: rest
+  base_url: ${TECHNICIAN_API_URL}
+  authentication:
+    type: bearer_token
+    token: ${TECHNICIAN_API_KEY}
+
+# Endpoints
+endpoints:
+  assign_technician:
+    method: POST
+    path: /api/v1/technicians/assign
+    description: Auto-assign technician based on skills and availability
+    request:
+      content_type: application/json
+      body:
+        work_order_id:
+          type: string
+          required: true
+        required_skills:
+          type: array
+          items:
+            type: string
+          required: true
+          description: Required skills (e.g., HVAC, Electrical, Motor Repair)
+        priority:
+          type: string
+          enum: [low, medium, high, critical]
+          default: high
+        location:
+          type: string
+          description: Equipment location for proximity matching
+    response:
+      success:
+        status_code: 200
+        schema:
+          technician_id:
+            type: string
+          technician_name:
+            type: string
+          skills:
+            type: array
+            items:
+              type: string
+          estimated_arrival:
+            type: string
+          status:
+            type: string
+          contact:
+            type: object
+            properties:
+              phone:
+                type: string
+              email:
+                type: string
+      error:
+        status_code: [400, 404, 500]
+        schema:
+          error:
+            type: string
+          message:
+            type: string
+
+  get_available_technicians:
+    method: GET
+    path: /api/v1/technicians/available
+    description: Get list of available technicians
+    parameters:
+      - name: skills
+        in: query
+        type: array
+        description: Filter by required skills
+      - name: location
+        in: query
+        type: string
+        description: Filter by location/region
+    response:
+      success:
+        status_code: 200
+        schema:
+          technicians:
+            type: array
+            items:
+              type: object
+              properties:
+                technician_id:
+                  type: string
+                name:
+                  type: string
+                skills:
+                  type: array
+                availability:
+                  type: string
+                current_location:
+                  type: string
+
+  get_technician_status:
+    method: GET
+    path: /api/v1/technicians/{technician_id}/status
+    description: Get current status of a technician
+    parameters:
+      - name: technician_id
+        in: path
+        type: string
+        required: true
+    response:
+      success:
+        status_code: 200
+        schema:
+          technician_id:
+            type: string
+          name:
+            type: string
+          status:
+            type: string
+            enum: [available, on_job, off_duty]
+          current_work_order:
+            type: string
+            nullable: true
+          location:
+            type: string
+          estimated_available_at:
+            type: string
+            nullable: true
+
+  update_assignment:
+    method: PATCH
+    path: /api/v1/technicians/assignments/{work_order_id}
+    description: Update technician assignment
+    parameters:
+      - name: work_order_id
+        in: path
+        type: string
+        required: true
+    request:
+      content_type: application/json
+      body:
+        technician_id:
+          type: string
+        status:
+          type: string
+          enum: [assigned, en_route, on_site, completed]
+        notes:
+          type: string
+
+# Error handling
+error_handling:
+  retry:
+    max_attempts: 3
+    backoff: exponential
+    initial_delay: 1000
+  timeout: 30000
+
+# Logging
+logging:
+  enabled: true
+  level: info
+  include_request: true
+  include_response: true
+
+# Made with Bob

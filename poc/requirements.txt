@@ -6,6 +6,7 @@ wheel>=0.38.0
 langgraph>=0.2.0
 langchain>=0.3.0
 langchain-core>=0.3.0
+grandalf>=0.8  # Required for langgraph.graph visualization
 
 # Streamlit for dashboard
 streamlit>=1.28.0,<1.40.0
@@ -25,3 +26,7 @@ pyarrow>=10.0.0
 
 # Basic utilities
 python-dotenv>=1.0.0
+requests>=2.31.0
+
+# Mock API servers (for hackathon demo)
+flask>=2.3.0

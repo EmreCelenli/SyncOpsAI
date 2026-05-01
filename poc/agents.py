@@ -170,13 +170,13 @@ def query_manual_real(equipment_id: str, anomaly_type: str, sensor_data: dict) -
 
 def diagnose_real(equipment_id: str, anomaly_type: str, sensor_data: dict, rag_results: dict) -> dict:
     """
-    Real diagnosis using Developer A's implementation.
+    Real diagnosis using Developer A's implementation with AI ALWAYS enabled.
     """
     if DEVELOPER_A_INTEGRATED and diagnose_equipment_issue is not None:
-        # Developer A's diagnose function expects just equipment_id, anomaly_type, and sensor_data
-        return diagnose_equipment_issue(equipment_id, anomaly_type, sensor_data, use_ai=False)
+        # Always use AI and Pinecone - this is a real working system
+        return diagnose_equipment_issue(equipment_id, anomaly_type, sensor_data, use_ai=True, use_pinecone=True)
     else:
-        # Fallback to mock
+        # Fallback to mock only if Developer A's code is not available
         return diagnose_mock(equipment_id, anomaly_type, {})
 
 
@@ -228,12 +228,24 @@ def diagnose_mock(equipment_id: str, anomaly_type: str, manual_info: dict) -> di
 # AGENT 3: ORCHESTRATOR - Work Order & Inventory
 # ============================================================================
 
+# Import Watson Orchestrate integration
+from typing import Optional, Callable, Any
+
+get_watson_orchestrate: Optional[Callable] = None
+WATSON_ORCHESTRATE_AVAILABLE = False
+
+try:
+    from watson_orchestrate_integration import get_watson_orchestrate  # type: ignore
+    WATSON_ORCHESTRATE_AVAILABLE = True
+except ImportError:
+    print("⚠️  Watson Orchestrate integration not found. Using mock functions.")
+
+
 def agent_3_action(state: State) -> State:
     """
-    Agent 3: Create work order and check inventory using watsonx Orchestrate.
+    Agent 3: Create work order and check inventory using Watson Orchestrate.
     
-    For POC: Use mock watsonx Orchestrate calls.
-    Production would use real watsonx Orchestrate API.
+    Uses real Watson Orchestrate API if configured, falls back to mock if unavailable.
     """
     if not state["diagnosis"]:
         return {
@@ -245,44 +257,64 @@ def agent_3_action(state: State) -> State:
     diagnosis = state["diagnosis"]
     parts_needed = state["parts_needed"]
     
-    # Mock work order creation (watsonx Orchestrate skill)
-    work_order_id = create_work_order_mock(equipment_id, diagnosis, parts_needed)
-    
-    # Mock inventory check (watsonx Orchestrate skill)
-    parts_available = check_inventory_mock(parts_needed)
+    # Get Watson Orchestrate instance
+    if WATSON_ORCHESTRATE_AVAILABLE and get_watson_orchestrate is not None:
+        orchestrate = get_watson_orchestrate()
+        
+        # Create work order using Watson Orchestrate
+        wo_result = orchestrate.create_work_order(
+            equipment_id=equipment_id,
+            diagnosis=diagnosis,
+            parts_needed=parts_needed,
+            priority="high"
+        )
+        work_order_id = wo_result["work_order_id"]
+        
+        # Check inventory using Watson Orchestrate
+        inventory_result = orchestrate.check_inventory(parts_needed)
+        parts_available = inventory_result["all_available"]
+        
+        # Assign technician using Watson Orchestrate
+        assignment = orchestrate.assign_technician(
+            work_order_id=work_order_id,
+            skills_required=["HVAC" if "HVAC" in equipment_id else "Motor Repair"]
+        )
+        
+        messages = [
+            f"📋 Agent 3: Work order created (Watson Orchestrate)",
+            f"   Work Order ID: {work_order_id}",
+            f"   Parts Status: {'✅ All in stock' if parts_available else '⚠️  Some on backorder'}",
+            f"   Assigned to: {assignment.get('technician_name', 'Auto-assign')}",
+            f"   ETA: {assignment.get('estimated_arrival', 'TBD')}"
+        ]
+    else:
+        # Fallback to mock functions
+        work_order_id = create_work_order_mock(equipment_id, diagnosis, parts_needed)
+        parts_available = check_inventory_mock(parts_needed)
+        
+        messages = [
+            f"📋 Agent 3: Work order created (mock mode)",
+            f"   Work Order ID: {work_order_id}",
+            f"   Parts Status: {'✅ All in stock' if parts_available else '⚠️  Some on backorder'}",
+            f"   Next: Assign to technician"
+        ]
     
     return {
         **state,
         "work_order_id": work_order_id,
         "parts_available": parts_available,
-        "messages": state["messages"] + [
-            f"📋 Agent 3: Work order created",
-            f"   Work Order ID: {work_order_id}",
-            f"   Parts Status: {'✅ All in stock' if parts_available else '⚠️  Some on backorder'}",
-            f"   Next: Assign to technician"
-        ]
+        "messages": state["messages"] + messages
     }
 
 
 def create_work_order_mock(equipment_id: str, diagnosis: str, parts: list[str]) -> str:
-    """
-    Mock watsonx Orchestrate "Create Work Order" skill.
-    
-    Production would call real watsonx Orchestrate API.
-    """
-    # Generate unique work order ID
+    """Mock work order creation (fallback)"""
     work_order_id = f"WO-{uuid.uuid4().hex[:6].upper()}"
     return work_order_id
 
 
 def check_inventory_mock(parts: list[str]) -> bool:
-    """
-    Mock watsonx Orchestrate "Check Inventory" skill.
-    
-    Production would call real watsonx Orchestrate API.
-    """
-    # For demo, always return True (parts available)
-    # In real system, would query inventory database
+    """Mock inventory check (fallback)"""
     return True
 
 
