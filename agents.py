@@ -72,9 +72,10 @@ class Agent2_DiagnosticExpert:
     Agent 2: Analyzes anomalies and generates diagnosis using RAG + LLM
     """
     
-    def __init__(self, use_ai=False):
+    def __init__(self, use_ai=False, use_pinecone=False):
         self.name = "Agent 2: Diagnostic Expert"
         self.use_ai = use_ai
+        self.use_pinecone = use_pinecone
         self.diagnoses_generated = []
     
     def process_anomaly(self, anomaly_event):
@@ -96,7 +97,8 @@ class Agent2_DiagnosticExpert:
             equipment_id=equipment_id,
             anomaly_type=anomaly_type,
             sensor_data=sensor_data,
-            use_ai=self.use_ai
+            use_ai=self.use_ai,
+            use_pinecone=self.use_pinecone
         )
         
         # Add agent metadata

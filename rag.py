@@ -1,23 +1,52 @@
 """
 Mock RAG (Retrieval-Augmented Generation) system for POC
 Task 3: 1.5 hours - Simple keyword matching, no Pinecone needed initially
+Updated: Added Pinecone vector database integration
 """
 
 from manuals import get_manual, get_troubleshooting_section, search_manual_content
 
+# Import Pinecone integration
+try:
+    from pinecone_integration import get_pinecone_rag
+    PINECONE_AVAILABLE = True
+except ImportError:
+    PINECONE_AVAILABLE = False
+    print("Pinecone integration not available - using keyword matching")
+
 
 class MockRAG:
     """
-    Simple RAG implementation using keyword matching
-    No vector database needed for POC - will add real Pinecone later
+    RAG implementation with optional Pinecone vector database
+    Falls back to keyword matching if Pinecone unavailable
     """
     
-    def __init__(self):
+    def __init__(self, use_pinecone=False):
         self.manuals_loaded = True
+        self.use_pinecone = use_pinecone
+        self.pinecone_rag = None
+        
+        if use_pinecone and PINECONE_AVAILABLE:
+            self._initialize_pinecone()
+    
+    def _initialize_pinecone(self):
+        """Initialize Pinecone RAG"""
+        try:
+            self.pinecone_rag = get_pinecone_rag()
+            if self.pinecone_rag.available:
+                print("✅ Pinecone RAG initialized")
+                self.use_pinecone = True
+            else:
+                print("⚠️  Pinecone not available, using keyword matching")
+                self.use_pinecone = False
+        except Exception as e:
+            print(f"❌ Error initializing Pinecone: {e}")
+            self.use_pinecone = False
     
     def query_manual(self, equipment_id, anomaly_type, sensor_data=None):
         """
         Query equipment manual for troubleshooting information
+        Uses Pinecone if available, falls back to keyword matching
         
         Args:
             equipment_id: Equipment identifier (e.g., 'HVAC-001')
@@ -27,6 +56,76 @@ class MockRAG:
         Returns:
             dict: Relevant manual sections and troubleshooting info
         """
+        # Try Pinecone first if enabled
+        if self.use_pinecone and self.pinecone_rag and self.pinecone_rag.available:
+            try:
+                return self._query_with_pinecone(equipment_id, anomaly_type, sensor_data)
+            except Exception as e:
+                print(f"⚠️  Pinecone query failed: {e}, falling back to keyword matching")
+        
+        # Fall back to keyword matching
+        return self._query_with_keywords(equipment_id, anomaly_type, sensor_data)
+    
+    def _query_with_pinecone(self, equipment_id, anomaly_type, sensor_data):
+        """Query using Pinecone vector database"""
+        # Build query text
+        query_parts = [f"Equipment {equipment_id}", f"Issue: {anomaly_type}"]
+        if sensor_data:
+            query_parts.append(f"Sensors: {self._format_sensor_context(sensor_data)}")
+        query_text = " ".join(query_parts)
+        
+        # Query Pinecone
+        results = self.pinecone_rag.query(query_text, equipment_id=equipment_id, top_k=3)
+        
+        if not results:
+            # Fall back to keyword matching
+            return self._query_with_keywords(equipment_id, anomaly_type, sensor_data)
+        
+        # Get manual for additional context
+        manual = get_manual(equipment_id)
+        
+        # Combine Pinecone results
+        combined_resolution_steps = []
+        combined_parts = []
+        relevant_sections = []
+        
+        for result in results:
+            if result.get('resolution_steps'):
+                combined_resolution_steps.extend(result['resolution_steps'])
+            if result.get('required_parts'):
+                combined_parts.extend(result['required_parts'])
+            
+            relevant_sections.append({
+                "section": result.get('section', 'unknown'),
+                "issue_type": result.get('issue_type', anomaly_type),
+                "content": result.get('text', ''),
+                "relevance_score": result.get('score', 0.0)
+            })
+        
+        # Remove duplicates
+        combined_resolution_steps = list(dict.fromkeys(combined_resolution_steps))
+        
+        # Get primary troubleshooting section
+        troubleshooting = get_troubleshooting_section(equipment_id, anomaly_type)
+        
+        return {
+            "equipment_id": equipment_id,
+            "equipment_name": manual["equipment_name"],
+            "equipment_type": manual["equipment_type"],
+            "anomaly_type": anomaly_type,
+            "troubleshooting": troubleshooting,
+            "relevant_sections": relevant_sections,
+            "required_parts": combined_parts if combined_parts else troubleshooting.get("required_parts", []),
+            "resolution_steps": combined_resolution_steps if combined_resolution_steps else troubleshooting.get("resolution", []),
+            "estimated_time": troubleshooting.get("estimated_time", "Unknown"),
+            "safety_precautions": troubleshooting.get("safety_precautions", []),
+            "diagnosis_steps": troubleshooting.get("diagnosis_steps", []),
+            "possible_causes": troubleshooting.get("possible_causes", []),
+            "query_method": "pinecone"
+        }
+    
+    def _query_with_keywords(self, equipment_id, anomaly_type, sensor_data):
+        """Query using keyword matching (original implementation)"""
         try:
             # Get the manual
             manual = get_manual(equipment_id)
@@ -228,7 +327,7 @@ SAFETY PRECAUTIONS:
 
 
 # Convenience function for quick queries
-def query_equipment_manual(equipment_id, anomaly_type, sensor_data=None):
+def query_equipment_manual(equipment_id, anomaly_type, sensor_data=None, use_pinecone=False):
     """
     Quick function to query equipment manual
     This is the main interface that Agent 2 will use
@@ -237,11 +336,12 @@ def query_equipment_manual(equipment_id, anomaly_type, sensor_data=None):
         equipment_id: Equipment identifier
         anomaly_type: Type of anomaly detected
         sensor_data: Optional sensor readings
+        use_pinecone: Use Pinecone vector database if available
     
     Returns:
         dict: RAG query results
     """
-    rag = MockRAG()
+    rag = MockRAG(use_pinecone=use_pinecone)
     return rag.query_manual(equipment_id, anomaly_type, sensor_data)
 
 

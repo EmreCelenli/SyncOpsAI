@@ -5,7 +5,7 @@ Updated: Added watsonx.ai integration
 """
 
 from datetime import datetime
-from rag import query_equipment_manual
+from rag import query_equipment_manual, MockRAG
 
 # Import watsonx.ai integration
 try:
@@ -22,14 +22,16 @@ class DiagnosticEngine:
     Will be replaced with real LLM (watsonx.ai) in Day 2
     """
     
-    def __init__(self, use_ai=False):
+    def __init__(self, use_ai=False, use_pinecone=False):
         """
         Initialize diagnostic engine
         
         Args:
             use_ai: If True, use real AI (watsonx.ai). If False, use templates
+            use_pinecone: If True, use Pinecone for RAG. If False, use keyword matching
         """
         self.use_ai = use_ai
+        self.use_pinecone = use_pinecone
         self.ai_model = None
         
         if use_ai and WATSONX_AVAILABLE:
@@ -67,8 +69,13 @@ class DiagnosticEngine:
         sensor_data = anomaly_event.get("sensor_data", {})
         timestamp = anomaly_event.get("timestamp", datetime.now().isoformat())
         
-        # Query RAG system for manual information
-        rag_results = query_equipment_manual(equipment_id, anomaly_type, sensor_data)
+        # Query RAG system for manual information (with optional Pinecone)
+        rag_results = query_equipment_manual(
+            equipment_id,
+            anomaly_type,
+            sensor_data,
+            use_pinecone=self.use_pinecone
+        )
         
         if self.use_ai:
             # Use real AI (Day 2)
@@ -168,9 +175,8 @@ class DiagnosticEngine:
                 "sensor_data": anomaly_event.get("sensor_data", {})
             }
             
-            # Format RAG context for AI
-            from rag import MockRAG
-            rag = MockRAG()
+            # Format RAG context for AI (with Pinecone if enabled)
+            rag = MockRAG(use_pinecone=self.use_pinecone)
             rag_context = rag.format_for_llm(
                 anomaly_event["equipment_id"],
                 anomaly_event["anomaly_type"],
@@ -303,7 +309,7 @@ class DiagnosticEngine:
 
 
 # Convenience function for quick diagnosis
-def diagnose(equipment_id, anomaly_type, sensor_data=None, use_ai=False):
+def diagnose(equipment_id, anomaly_type, sensor_data=None, use_ai=False, use_pinecone=False):
     """
     Quick diagnosis function
     
@@ -311,12 +317,13 @@ def diagnose(equipment_id, anomaly_type, sensor_data=None, use_ai=False):
         equipment_id: Equipment identifier
         anomaly_type: Type of anomaly
         sensor_data: Optional sensor readings
-        use_ai: Use AI model (Day 2) or template (Day 1)
+        use_ai: Use AI model (watsonx.ai) or template
+        use_pinecone: Use Pinecone vector database or keyword matching
     
     Returns:
         dict: Diagnosis report
     """
-    engine = DiagnosticEngine(use_ai=use_ai)
+    engine = DiagnosticEngine(use_ai=use_ai, use_pinecone=use_pinecone)
     
     anomaly_event = {
         "equipment_id": equipment_id,
