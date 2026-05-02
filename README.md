@@ -52,7 +52,7 @@ streamlit run dashboard/app.py
 
 > watsonx.ai is optional — all agents fall back to template-based diagnosis if the API key is not set.
 
-## 🚀 Startup Commands
+## Startup Commands
 
 ```bash
 # Option 1: Start everything at once
