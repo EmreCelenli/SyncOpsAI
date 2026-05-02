@@ -277,6 +277,28 @@ with tab2:
                         
                         elif step['step'] == 2:
                             result = step['result']
+                            
+                            # Display sensor readings if available
+                            sensor_readings = result.get('sensor_readings', {})
+                            if sensor_readings:
+                                st.markdown("**📊 Sensor Readings at Time of Diagnosis:**")
+                                sensor_cols = st.columns(len(sensor_readings))
+                                for idx, (key, value) in enumerate(sensor_readings.items()):
+                                    if key not in ['time', 'status', 'timestamp']:
+                                        with sensor_cols[idx]:
+                                            # Format based on sensor type
+                                            if 'temp' in key.lower():
+                                                st.metric(f"{key.title()}", f"{value}°C")
+                                            elif 'pressure' in key.lower():
+                                                st.metric(f"{key.title()}", f"{value} PSI")
+                                            elif 'vibration' in key.lower():
+                                                st.metric(f"{key.title()}", f"{value} mm/s")
+                                            elif 'current' in key.lower():
+                                                st.metric(f"{key.title()}", f"{value}A")
+                                            else:
+                                                st.metric(f"{key.title()}", value)
+                                st.markdown("---")
+                            
                             st.markdown(f"**Root Cause:** {result.get('root_cause', 'N/A')}")
                             st.markdown("**Resolution Steps:**")
                             for idx, res_step in enumerate(result.get('resolution_steps', []), 1):
