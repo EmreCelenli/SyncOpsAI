@@ -7,6 +7,10 @@ from flask import Flask, request, jsonify
 from datetime import datetime
 import sys
 import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Add parent directory to path to import our modules
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -15,6 +19,10 @@ from diagnosis import diagnose
 from data import check_anomaly
 
 app = Flask(__name__)
+
+# Read AI configuration from environment
+USE_AI_DEFAULT = os.getenv('USE_AI', 'true').lower() == 'true'
+USE_PINECONE_DEFAULT = os.getenv('USE_PINECONE', 'false').lower() == 'true'
 
 # Store work orders in memory (for demo)
 work_orders = {}
@@ -105,8 +113,8 @@ def generate_diagnosis():
         equipment_id = data.get('equipment_id')
         anomaly_type = data.get('anomaly_type')
         sensor_data = data.get('sensor_data')
-        use_ai = data.get('use_ai', False)
-        use_pinecone = data.get('use_pinecone', False)
+        use_ai = data.get('use_ai', USE_AI_DEFAULT)
+        use_pinecone = data.get('use_pinecone', USE_PINECONE_DEFAULT)
         
         if not equipment_id or not anomaly_type or not sensor_data:
             return jsonify({'error': 'Missing required fields'}), 400
@@ -387,8 +395,8 @@ def diagnostic_agent():
             equipment_id=data.get('equipment_id'),
             anomaly_type=data.get('anomaly_type'),
             sensor_data=data.get('sensor_data'),
-            use_ai=data.get('use_ai', False),
-            use_pinecone=data.get('use_pinecone', False)
+            use_ai=data.get('use_ai', USE_AI_DEFAULT),
+            use_pinecone=data.get('use_pinecone', USE_PINECONE_DEFAULT)
         )
         
         response = {
@@ -459,8 +467,8 @@ def run_workflow():
         data = request.json
         equipment_id = data.get('equipment_id')
         sensor_data = data.get('sensor_data')
-        use_ai = data.get('use_ai', False)
-        use_pinecone = data.get('use_pinecone', False)
+        use_ai = data.get('use_ai', USE_AI_DEFAULT)
+        use_pinecone = data.get('use_pinecone', USE_PINECONE_DEFAULT)
         
         workflow_steps = []
         

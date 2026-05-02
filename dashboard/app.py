@@ -159,8 +159,8 @@ with st.sidebar:
     
     # AI Features
     st.subheader("AI Features")
-    use_ai = st.checkbox("Enable watsonx.ai", value=False, 
-                         help="Use AI-powered diagnosis (requires watsonx.ai)")
+    use_ai = st.checkbox("Enable watsonx.ai", value=True,
+                         help="Use AI-powered diagnosis with IBM Granite models")
     use_pinecone = st.checkbox("Enable Pinecone RAG", value=False,
                                help="Use vector search for manuals (requires Pinecone)")
     
