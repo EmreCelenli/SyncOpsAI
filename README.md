@@ -1,92 +1,17 @@
-# SyncOpsAI - AI-Powered Equipment Monitoring System
+# SyncOpsAI — AI-Powered Equipment Monitoring
 
-**2-Day Hackathon POC** | Multi-Agent System | IBM watsonx.ai | RAG
+**IBM Hackathon POC** | Multi-Agent System | watsonx.ai | watsonx Orchestrate | RAG
 
-## 🎯 Overview
+## Overview
 
-SyncOpsAI is an AI-powered equipment monitoring system that uses multi-agent architecture to automatically detect anomalies, diagnose issues, and create work orders. Built for the 2-day hackathon with focus on compelling demo over production code.
+SyncOpsAI monitors manufacturing equipment in real time and automatically detects anomalies, diagnoses root causes, and generates maintenance work orders. Three specialized AI agents replace a manual process that previously took hours.
 
-## ✨ Key Features
-
-- **🤖 Multi-Agent System**: 3 specialized AI agents working together
-  - Agent 1: Telemetry Listener (anomaly detection)
-  - Agent 2: Diagnostic Expert (RAG + AI diagnosis)
-  - Agent 3: Orchestrator (work orders + inventory)
-
-- **🧠 AI-Powered Diagnosis**: IBM watsonx.ai Granite models
-  - Intelligent root cause analysis
-  - Context-aware recommendations
-  - Confidence scoring
-
-- **📚 RAG System**: Retrieval-Augmented Generation
-  - Equipment manual knowledge base
-  - Relevant troubleshooting retrieval
-  - Parts and cost estimation
-
-- **📊 Real-Time Dashboard**: Streamlit interface
-  - Live sensor monitoring
-  - Agent activity timeline
-  - Diagnosis visualization
-  - Work order management
-
-## 🚀 Quick Start
-
-```bash
-# 1. Install dependencies
-pip install -r requirements.txt
-
-# 2. Configure .env file
-cp .env.example .env
-# Edit .env with your watsonx.ai API key
-
-# 3. Test components
-python agents.py
-
-# 4. Run dashboard
-streamlit run dashboard.py
-```
-
-See [SETUP.md](SETUP.md) for detailed instructions.
-
-## 📁 Project Structure
-
-```
-SyncOpsAI/
-├── data.py                    # Sensor data scenarios
-├── manuals.py                 # Equipment manuals
-├── rag.py                     # RAG system
-├── diagnosis.py               # Diagnostic engine
-├── agents.py                  # Multi-agent workflow
-├── watsonx_integration.py     # watsonx.ai wrapper
-├── dashboard.py               # Streamlit UI
-├── requirements.txt           # Dependencies
-├── .env                       # Configuration (not in git)
-├── SETUP.md                   # Setup guide
-└── README.md                  # This file
-```
-
-## 🎬 Demo Scenarios
-
-### Scenario 1: HVAC Overheating
-- **Equipment**: HVAC-001 Industrial HVAC System
-- **Issue**: Temperature rises from 22°C → 32°C
-- **AI Diagnosis**: Clogged air filter restricting airflow
-- **Resolution**: Replace filter (Part: AF-2024, $45, 30-60 min)
-- **Outcome**: Work order WO-1000 created automatically
-
-### Scenario 2: Motor Vibration
-- **Equipment**: MOTOR-001 Conveyor Motor
-- **Issue**: Vibration rises from 1.2 Hz → 4.5 Hz
-- **AI Diagnosis**: Worn or damaged roller bearings
-- **Resolution**: Replace bearings (Parts: RB-500, AS-KIT, $310, 2-3 hours)
-- **Outcome**: Work order WO-1001 created automatically
-
-## 🏗️ Architecture
+## How It Works
 
 ```mermaid
 graph TB
-    A[IoT Sensors] -->|Real-time Data| B[Agent 1: Telemetry]
-    B -->|Anomaly Detected| C[Agent 2: Diagnostic]
+    A[IoT Sensors] -->|Real-time Data| B[Agent 1: Telemetry Listener]
+    B -->|Anomaly Detected| C[Agent 2: Diagnostic Expert]
     C -->|Query| D[RAG System]
     D -->|Context| E[Equipment Manuals]
     C -->|Generate| F[watsonx.ai Granite]
@@ -94,112 +19,175 @@ graph TB
     C -->|Report| G[Agent 3: Orchestrator]
     G -->|Create| H[Work Order]
     G -->|Check| I[Inventory]
-    
+
     style C fill:#4CAF50
     style F fill:#FF9800
     style D fill:#2196F3
 ```
 
-## 🛠️ Tech Stack
+| Agent | Role |
+|-------|------|
+| **Agent 1 — Telemetry Listener** | Monitors sensor data, detects anomalies, classifies severity |
+| **Agent 2 — Diagnostic Expert** | Queries equipment manuals via RAG, generates AI diagnosis using IBM Granite |
+| **Agent 3 — Orchestrator** | Checks inventory, creates prioritized work order |
 
-- **AI/ML**: IBM watsonx.ai (Granite models)
-- **Vector DB**: Pinecone (optional)
-- **Framework**: Python 3.9+
-- **UI**: Streamlit + Plotly
-- **Orchestration**: Simple function-based (LangGraph ready)
+## Quick Start
 
-## 📊 Performance
+```bash
+# 1. Install dependencies
+pip install -r requirements.txt
 
-- **Detection Speed**: <1ms (threshold-based)
-- **Diagnosis Time**: 2-5s (with AI), <1ms (template)
-- **End-to-End**: ~5s from anomaly to work order
-- **Accuracy**: 85-95% confidence (AI-enhanced)
+# 2. Configure environment
+cp .env.example .env
+# Add your WATSONX_API_KEY, WATSONX_URL, WATSONX_PROJECT_ID
 
-## 🎯 Value Proposition
+# 3. Start the Mock API
+python mock_apis/app.py
+# Runs on http://localhost:8787
 
-- **95% faster diagnosis** vs manual process
-- **80% reduction** in manual lookup time
-- **Proactive maintenance** prevents failures
-- **Automated work orders** reduce response time
-- **Cost estimation** improves planning
-
-## 🔧 Development Status
-
-### ✅ Completed (Day 1)
-- [x] Sensor data scenarios
-- [x] Equipment manuals
-- [x] Mock RAG system
-- [x] Template-based diagnosis
-- [x] Multi-agent workflow
-- [x] watsonx.ai integration
-
-### ⏳ In Progress
-- [ ] Streamlit dashboard
-- [ ] Pinecone vector database
-- [ ] Real-time streaming
-- [ ] Demo video
-- [ ] Presentation slides
-
-## 📝 Usage Examples
-
-### Run Complete Workflow
-
-```python
-from agents import MultiAgentWorkflow
-
-# Initialize with AI
-workflow = MultiAgentWorkflow(use_ai=True)
-
-# Run scenario
-results = workflow.run_scenario("hvac_overheating")
-
-# Check last result
-final = results[-1]
-if final['anomaly_detected']:
-    print(f"Work Order: {final['work_order']['work_order_id']}")
-    print(f"Issue: {final['diagnosis']['root_cause']}")
-    print(f"Cost: {final['diagnosis']['estimated_cost']}")
+# 4. Run the dashboard
+streamlit run dashboard/app.py
+# Opens at http://localhost:8501
 ```
 
-### AI Diagnosis
+> watsonx.ai is optional — all agents fall back to template-based diagnosis if the API key is not set.
 
-```python
-from diagnosis import diagnose
+## 🚀 Startup Commands
 
-diagnosis = diagnose(
-    equipment_id="HVAC-001",
-    anomaly_type="overheating",
-    sensor_data={"temp": 32.0, "pressure": 54.0},
-    use_ai=True
-)
+```bash
+# Option 1: Start everything at once
+cd dashboard && ./run_dashboard.sh
 
-print(diagnosis['root_cause'])
-print(f"Confidence: {diagnosis['confidence_score']*100:.0f}%")
+# Option 2: Start separately
+
+# Terminal 1 — Mock API
+cd mock_apis && python app.py
+
+# Terminal 2 — Dashboard
+cd dashboard && streamlit run app.py
 ```
 
-## 🤝 Contributing
+## Project Structure
 
-This is a hackathon POC. For production use:
-1. Add error handling
-2. Implement proper logging
-3. Add authentication
-4. Scale with LangGraph
-5. Add monitoring/alerting
+```
+SyncOpsAI/
+├── poc/                              # Core agent logic (POC)
+│   ├── agents.py                     # Agent 1, 2, 3 implementations
+│   ├── main.py                       # LangGraph workflow orchestration
+│   ├── state.py                      # Shared state schema
+│   ├── data.py                       # Demo scenarios & thresholds
+│   ├── dashboard.py                  # POC Streamlit interface
+│   ├── integration.py                # POC integration layer
+│   └── requirements.txt
+│
+├── dashboard/                        # Production dashboard
+│   ├── app.py                        # Streamlit app (4 tabs, live gauges)
+│   ├── run_dashboard.sh              # One-command startup script
+│   └── requirements.txt
+│
+├── mock_apis/                        # Mock REST API servers
+│   ├── app.py                        # Main Flask API
+│   ├── work_order_api.py             # Work order endpoints
+│   ├── inventory_api.py              # Inventory endpoints
+│   ├── technician_api.py             # Technician endpoints
+│   ├── test_api.py                   # API tests
+│   ├── start_all.sh                  # Start all API servers
+│   └── stop_all.sh                   # Stop all API servers
+│
+├── orchestrate/                      # watsonx Orchestrate
+│   ├── agents/
+│   │   ├── telemetry_agent.yaml      # Agent 1 config
+│   │   ├── diagnostic_agent.yaml     # Agent 2 config
+│   │   └── orchestrator_agent.yaml   # Agent 3 config
+│   ├── tools/
+│   │   ├── detect_anomaly.py         # Anomaly detection tool
+│   │   ├── generate_diagnosis.py     # Diagnosis generation tool
+│   │   ├── create_work_order.py      # Work order tool
+│   │   └── check_inventory.py        # Inventory check tool
+│   └── import-all.sh                 # Deploy all agents & tools
+│
+├── tools/                            # watsonx Orchestrate tool YAMLs
+│   ├── work_order_api.yaml
+│   ├── inventory_api.yaml
+│   └── technician_api.yaml
+│
+├── bob_sessions/                     # IBM Bob session logs
+│
+├── logs/                             # API runtime logs
+│
+├── data.py                           # Sensor data scenarios
+├── manuals.py                        # Equipment manual knowledge base
+├── rag.py                            # RAG system
+├── diagnosis.py                      # Diagnostic engine
+├── agents.py                         # Root-level agent workflow
+├── watsonx_integration.py            # watsonx.ai Granite wrapper
+├── watson_orchestrate_integration.py # watsonx Orchestrate wrapper
+├── pinecone_integration.py           # Pinecone vector DB integration
+├── verify_ai_config.py               # AI configuration checker
+├── workspace_config.yaml             # Workspace configuration
+└── requirements.txt                  # Root dependencies
+```
 
-## 📄 License
+## Demo Scenarios
 
-MIT License - See LICENSE file
+### HVAC Overheating
+- **Equipment**: HVAC-001
+- **Signal**: Temperature 22°C → 32°C (threshold: 28°C)
+- **AI Diagnosis**: Clogged air filter restricting airflow (92% confidence)
+- **Parts**: AF-2024 — $45, 30 min repair
+- **Result**: Work order created automatically in <5s
 
-## 🙏 Acknowledgments
+### Motor Vibration
+- **Equipment**: MOTOR-001
+- **Signal**: Vibration 1.2 → 4.5 Hz (threshold: 3.5 Hz)
+- **AI Diagnosis**: Worn roller bearings (88% confidence)
+- **Parts**: RB-500 + AS-KIT — $310, 2–3 hrs repair
+- **Result**: Work order created automatically in <5s
 
-- IBM watsonx.ai for Granite models
-- Streamlit for rapid UI development
-- Pinecone for vector database
+## Tech Stack
 
-## 📧 Contact
+| Layer | Technology |
+|-------|-----------|
+| AI Diagnosis | IBM watsonx.ai — Granite-13B-Chat-v2 |
+| Agent Orchestration | IBM watsonx Orchestrate |
+| Development Assistant | IBM Bob |
+| Workflow Graph | LangGraph |
+| Vector DB | Pinecone (production) |
+| UI | Streamlit + Plotly |
+| API | Flask |
+| Language | Python 3.9+ |
 
-For questions or demo requests, contact the development team.
+## IBM Technology Usage
+
+**IBM Bob** — Used throughout development for architecture planning, parallel workstream design, and code generation across all modules.
+
+**IBM watsonx.ai** — Powers Agent 2. Builds a prompt from sensor readings and RAG-retrieved manual context, calls Granite-13B-Chat-v2, and returns a structured JSON diagnosis with root cause, confidence score, and recommended actions. Falls back to template-based diagnosis if unavailable.
+
+**IBM watsonx Orchestrate** — Three agent YAML configurations and four `@tool`-decorated Python functions are implemented and ready for deployment. Live connection is the immediate next step — no structural changes required.
+
+## Performance
+
+| Metric | Value |
+|--------|-------|
+| Anomaly detection | <1ms |
+| AI diagnosis | 2–5s |
+| End-to-end (anomaly → work order) | <5s |
+| Confidence score (AI mode) | 85–95% |
+| Diagnosis time vs manual | 95% faster |
+
+## Status
+
+| Component | Status |
+|-----------|--------|
+| Multi-agent workflow | ✅ Complete |
+| watsonx.ai integration | ✅ Complete |
+| RAG system | ✅ Complete |
+| Mock API (10 endpoints) | ✅ Complete |
+| Streamlit dashboard | ✅ Complete |
+| watsonx Orchestrate structure | ✅ Complete |
+| Pinecone integration | 🏭 Production |
+| Live Orchestrate connection | 🏭 Production |
 
 ---
 
-**Built for 2-Day Hackathon** | **Focus: Demo > Code** | **Status: POC Ready** ✅
+*Built for IBM Hackathon — Team Manual-Miners*
