@@ -50,8 +50,6 @@ streamlit run dashboard/app.py
 # Opens at http://localhost:8501
 ```
 
-> watsonx.ai is optional — all agents fall back to template-based diagnosis if the API key is not set.
-
 ## Startup Commands
 
 ```bash
